@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Plus, CheckCircle } from "lucide-react-native";
@@ -6,29 +6,38 @@ import { useRouter } from "expo-router";
 import { useWorkout } from "@/src/context/WorkoutContext";
 import { ExerciseCard } from "@/src/components/ExerciseCard";
 import { ExerciseSearch } from "@/src/components/ExerciseSearch";
+import { WorkoutSummaryModal } from "@/src/components/WorkoutSummaryModal";
+import { NameInputModal } from "@/src/components/NameInputModal";
 import { ExerciseDefinition } from "@/src/data/exercises";
+import { getCompletedSetCount, getTotalVolume, saveWorkoutAsTemplate } from "@/src/db/queries";
 
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
-  const { isActive, exercises, addExercise, finishWorkout, startTime } =
+  const { isActive, exercises, addExercise, finishWorkout, startTime, workoutId } =
     useWorkout();
   const [searchVisible, setSearchVisible] = useState(false);
+  const [summaryVisible, setSummaryVisible] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [frozenElapsed, setFrozenElapsed] = useState<number | null>(null);
+  const [routineNameVisible, setRoutineNameVisible] = useState(false);
+  const pendingSaveRef = useRef<{ name: string; notes: string; workoutId: number } | null>(null);
+
+  const displayElapsed = frozenElapsed ?? elapsed;
 
   useEffect(() => {
-    if (!isActive || !startTime) {
-      setElapsed(0);
+    if (!isActive || !startTime || frozenElapsed !== null) {
+      if (!isActive) setElapsed(0);
       return;
     }
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     return () => clearInterval(interval);
-  }, [isActive, startTime]);
+  }, [isActive, startTime, frozenElapsed]);
 
-  const hours = String(Math.floor(elapsed / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
-  const seconds = String(elapsed % 60).padStart(2, "0");
+  const hours = String(Math.floor(displayElapsed / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((displayElapsed % 3600) / 60)).padStart(2, "0");
+  const seconds = String(displayElapsed % 60).padStart(2, "0");
 
   function handleSelectExercise(exercise: ExerciseDefinition) {
     addExercise(exercise.name, exercise.muscleGroup);
@@ -42,10 +51,51 @@ export default function ActiveWorkoutScreen() {
   }
 
   function handleFinish() {
-    finishWorkout();
+    setFrozenElapsed(elapsed);
+    setSummaryVisible(true);
   }
 
-  if (!isActive) {
+  function handleSummaryClose() {
+    setSummaryVisible(false);
+    setFrozenElapsed(null);
+  }
+
+  function handleSummarySave(name: string, notes: string, saveAsRoutine: boolean) {
+    const savedDuration = frozenElapsed ?? elapsed;
+
+    if (saveAsRoutine && workoutId) {
+      // Capture workoutId before finishWorkout clears it
+      pendingSaveRef.current = { name, notes, workoutId };
+      // Save the workout first
+      finishWorkout(name, notes, savedDuration);
+      setSummaryVisible(false);
+      setFrozenElapsed(null);
+      // Then show routine name modal
+      setRoutineNameVisible(true);
+    } else {
+      finishWorkout(name, notes, savedDuration);
+      setSummaryVisible(false);
+      setFrozenElapsed(null);
+      router.navigate("/(tabs)/");
+    }
+  }
+
+  function handleRoutineNameConfirm(routineName: string) {
+    if (pendingSaveRef.current) {
+      saveWorkoutAsTemplate(pendingSaveRef.current.workoutId, routineName, "");
+      pendingSaveRef.current = null;
+    }
+    setRoutineNameVisible(false);
+    router.navigate("/(tabs)/");
+  }
+
+  function handleRoutineNameCancel() {
+    pendingSaveRef.current = null;
+    setRoutineNameVisible(false);
+    router.navigate("/(tabs)/");
+  }
+
+  if (!isActive && !routineNameVisible) {
     return (
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 px-5 pt-4">
@@ -134,6 +184,26 @@ export default function ActiveWorkoutScreen() {
         visible={searchVisible}
         onClose={() => setSearchVisible(false)}
         onSelect={handleSelectExercise}
+      />
+
+      <WorkoutSummaryModal
+        visible={summaryVisible}
+        onClose={handleSummaryClose}
+        onSave={handleSummarySave}
+        duration={displayElapsed}
+        setCount={workoutId ? getCompletedSetCount(workoutId) : 0}
+        totalVolume={workoutId ? getTotalVolume(workoutId) : 0}
+        exerciseNames={exercises.map((ex) => ex.name)}
+        defaultName="Workout"
+      />
+
+      <NameInputModal
+        visible={routineNameVisible}
+        title="Name Your Routine"
+        defaultValue="My Routine"
+        confirmLabel="Save Routine"
+        onConfirm={handleRoutineNameConfirm}
+        onCancel={handleRoutineNameCancel}
       />
     </SafeAreaView>
   );

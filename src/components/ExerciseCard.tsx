@@ -1,5 +1,5 @@
 import { TouchableOpacity, Text, View } from "react-native";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, CheckCircle2 } from "lucide-react-native";
 import { Card } from "./Card";
 
 interface ExerciseCardProps {
@@ -15,9 +15,13 @@ export function ExerciseCard({
   setCount,
   onPress,
 }: ExerciseCardProps) {
+  const hasLoggedSets = setCount > 0;
+
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
-      <Card className="mb-3">
+      <Card
+        className={`mb-3 ${hasLoggedSets ? "border-l-4 border-l-green-500" : ""}`}
+      >
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <Text className="text-base font-bold text-gray-900">{name}</Text>
@@ -25,7 +29,11 @@ export function ExerciseCard({
               {muscleGroup} &middot; {setCount} {setCount === 1 ? "set" : "sets"} done
             </Text>
           </View>
-          <ChevronRight size={20} color="#9CA3AF" />
+          {hasLoggedSets ? (
+            <CheckCircle2 size={20} color="#22C55E" />
+          ) : (
+            <ChevronRight size={20} color="#9CA3AF" />
+          )}
         </View>
       </Card>
     </TouchableOpacity>

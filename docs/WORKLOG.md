@@ -1,5 +1,26 @@
 # Work Log
 
+## 2026-02-15 — Claude (Phase 3.5: UX Polish, Set Pager & CRUD)
+- Updated `src/context/WorkoutContext.tsx` — `finishWorkout` now accepts optional explicit duration param
+- Updated `app/(tabs)/active-workout.tsx` — frozenElapsed state freezes timer when summary modal opens; separate routine naming flow via NameInputModal after workout save
+- Created `src/components/NameInputModal.tsx` — reusable modal for text input (routine naming + renaming)
+- Updated `src/components/ExerciseCard.tsx` — green left border + CheckCircle2 icon when sets are logged
+- Updated `app/focused-entry.tsx` — haptic feedback on Log Set (expo-haptics), Reanimated scale pulse + checkmark flash on counter, set pager with indicator boxes (tap to review logged sets read-only, Log Set only on active set)
+- Updated `src/db/queries.ts` — added deleteWorkout (cascade delete sets→exercises→workout), updateTemplateName
+- Created `src/components/RoutinePreviewModal.tsx` — preview modal showing routine exercises before starting
+- Updated `app/(tabs)/index.tsx` — swipe-to-delete workouts (Swipeable), long-press routines for Rename/Delete, tap routine opens preview modal
+- Updated `app/_layout.tsx` — wrapped root layout with GestureHandlerRootView for swipe gestures
+
+## 2026-02-15 — Claude (Phase 3: Workout Summary, Persistence & Routines)
+- Updated `src/db/db.ts` — added `notes` column to workouts (ALTER TABLE), created `templates` and `template_exercises` tables
+- Updated `src/db/queries.ts` — added `notes` to WorkoutRow, updated finishWorkout to accept name/notes, added template CRUD functions (createTemplate, addTemplateExercise, saveWorkoutAsTemplate, getAllTemplates, getTemplateExercises, deleteTemplate), added getWorkoutById, getCompletedSetCount, getTotalVolume
+- Updated `src/context/WorkoutContext.tsx` — finishWorkout now accepts name/notes params, added startWorkoutFromTemplate
+- Created `src/components/WorkoutSummaryModal.tsx` — post-workout modal with duration/sets/volume stats, name input, notes input, save-as-routine toggle, Save & Finish button
+- Updated `app/(tabs)/active-workout.tsx` — Finish Workout opens summary modal (workout stays active), Save & Finish saves data + optionally creates template + navigates to History
+- Created `app/workout-detail.tsx` — full workout detail screen showing name, date, duration, volume, notes, exercises with sets
+- Updated `app/_layout.tsx` — registered workout-detail Stack.Screen
+- Updated `app/(tabs)/index.tsx` — history cards are tappable (navigate to workout-detail), added "My Routines" horizontal ScrollView section with template cards
+
 ## 2026-02-15 — Claude (Post-Phase 2 fix)
 - Fixed focused-entry keyboard overlap — wrapped content in KeyboardAvoidingView + ScrollView so buttons stay tappable when keyboard is open
 
