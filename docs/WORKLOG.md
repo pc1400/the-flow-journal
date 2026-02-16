@@ -1,5 +1,8 @@
 # Work Log
 
+## 2026-02-15 — Claude (Post-Phase 2 fix)
+- Fixed focused-entry keyboard overlap — wrapped content in KeyboardAvoidingView + ScrollView so buttons stay tappable when keyboard is open
+
 ## 2026-02-15 — Claude (Phase 2: Focused Entry Mode)
 - Created `src/db/queries.ts` with all DB query functions (createWorkout, addExercise, logSet, getSetsForExercise, getLastSessionSets, finishWorkout, getRecentWorkouts)
 - Created `src/data/exercises.ts` with 30 common exercises across 6 muscle groups
