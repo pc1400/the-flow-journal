@@ -55,12 +55,14 @@ src/
 This project uses shared coordination files for multi-developer Claude Code sessions.
 
 **Before starting any work, read these files:**
+- `docs/PLAN.md` — phased development plan (source of truth for what we're building)
 - `docs/TASKS.md` — shared task board (claim tasks, mark done)
 - `docs/WORKLOG.md` — recent changes log (know what just happened)
 
 **After finishing work:**
 - Update `docs/TASKS.md` (move task to Done)
 - Add entry to `docs/WORKLOG.md`
+- Update `docs/PLAN.md` if the plan changed (note who, when, and why)
 - `git pull --rebase` before pushing
 
 See `.claude/rules/workflow.md` for the full collaboration workflow.
