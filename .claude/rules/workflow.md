@@ -16,7 +16,8 @@
 
 ## Using Gemini for Planning
 - PLAN.md is the source of truth, not Gemini conversations
-- When starting a new Gemini session, paste PLAN.md contents for context
+- **Starting a new Gemini session:** run `./scripts/context.sh | pbcopy` to copy full project context to clipboard, then paste into Gemini
+- The script combines CLAUDE.md, PLAN.md, TASKS.md, WORKLOG.md, and a file tree into one paste-ready block
 - After refining a phase in Gemini, update PLAN.md and include the Gemini share link
 - Log Gemini session links in WORKLOG.md entries for traceability
 
