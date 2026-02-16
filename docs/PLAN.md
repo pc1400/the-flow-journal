@@ -21,8 +21,26 @@
 - **Active Workout screen** — live timer, exercise list via FlatList, Add Exercise + Finish Workout buttons
 - **History screen** — "Start Empty Workout" creates workout and navigates to active tab, recent workouts list from DB
 
-## Phase 3: TBD
-<!-- TODO: Fill in from Gemini conversation -->
+## Phase 3: Workout Summary, Persistence, and Routine Templates
+**Status:** Done (2026-02-15)
+- **Schema update** — added `notes` column to workouts (ALTER TABLE), created `templates` and `template_exercises` tables
+- **New queries** — getWorkoutById, getCompletedSetCount, getTotalVolume, createTemplate, addTemplateExercise, saveWorkoutAsTemplate, getAllTemplates, getTemplateExercises, deleteTemplate
+- **WorkoutSummaryModal** — post-workout modal with stats (duration/sets/volume), editable name, notes input, save-as-routine toggle
+- **Finish workflow** — "Finish Workout" opens summary modal (workout stays active), "Save & Finish" saves name/notes/template then navigates to History
+- **Workout Detail screen** (`app/workout-detail.tsx`) — full completed workout view with exercises, sets, notes, accessed from tappable History cards
+- **Routine templates** — "My Routines" horizontal section on History screen, tap to start pre-populated workout from template
+
+## Phase 3.5: UX Polish, Set Pager & CRUD
+**Status:** Done (2026-02-15)
+- **Timer freeze** — elapsed time freezes when summary modal opens, saved duration matches what user saw
+- **Save-as-routine flow** — separate routine naming step via `NameInputModal` after workout save; notes never saved to template
+- **Green finished exercises** — exercises with logged sets show green left border + checkmark icon on active-workout screen
+- **Haptic feedback** — `expo-haptics` medium impact on Log Set, Reanimated scale pulse + checkmark flash on set counter
+- **Set pager** — indicator boxes in focused-entry for all sets; tap to review logged sets (read-only green cards); Log Set only visible on active set
+- **Delete workout** — swipe-to-delete on history cards via `Swipeable` from gesture-handler, cascade deletes sets → exercises → workout
+- **Delete routine** — long-press routine card → Alert with Delete confirmation
+- **Rename routine** — long-press routine card → Alert with Rename option → `NameInputModal`
+- **Routine preview** — tap routine shows `RoutinePreviewModal` with exercise list + "Jump into Routine" button
 
 ## Phase 4: TBD
 <!-- TODO: Fill in from Gemini conversation -->

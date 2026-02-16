@@ -1,26 +1,121 @@
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useWorkout } from "@/src/context/WorkoutContext";
-import { getRecentWorkouts, WorkoutRow } from "@/src/db/queries";
+import {
+  getRecentWorkouts,
+  getAllTemplates,
+  getTemplateExercises,
+  deleteWorkout,
+  deleteTemplate,
+  updateTemplateName,
+  WorkoutRow,
+  TemplateRow,
+  TemplateExerciseRow,
+} from "@/src/db/queries";
 import { Card } from "@/src/components/Card";
+import { NameInputModal } from "@/src/components/NameInputModal";
+import { RoutinePreviewModal } from "@/src/components/RoutinePreviewModal";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import { Swipeable } from "react-native-gesture-handler";
+import { Trash2 } from "lucide-react-native";
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const { startWorkout, isActive } = useWorkout();
+  const { startWorkout, startWorkoutFromTemplate, isActive } = useWorkout();
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setWorkouts(getRecentWorkouts());
-    }, [])
-  );
+  // Rename modal state
+  const [renameVisible, setRenameVisible] = useState(false);
+  const [renameTemplateId, setRenameTemplateId] = useState<number | null>(null);
+  const [renameDefaultValue, setRenameDefaultValue] = useState("");
+
+  // Routine preview modal state
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<TemplateRow | null>(null);
+  const [previewExercises, setPreviewExercises] = useState<TemplateExerciseRow[]>([]);
+
+  const refreshData = useCallback(() => {
+    setWorkouts(getRecentWorkouts());
+    try {
+      setTemplates(getAllTemplates());
+    } catch {
+      // templates table may not exist yet on first render
+    }
+  }, []);
+
+  useFocusEffect(refreshData);
 
   function handleStartWorkout() {
     startWorkout("Workout");
     router.navigate("/(tabs)/active-workout");
+  }
+
+  function handleRoutineTap(template: TemplateRow) {
+    const exercises = getTemplateExercises(template.id);
+    setPreviewTemplate(template);
+    setPreviewExercises(exercises);
+    setPreviewVisible(true);
+  }
+
+  function handlePreviewStart() {
+    if (previewTemplate) {
+      startWorkoutFromTemplate(previewTemplate.id);
+      setPreviewVisible(false);
+      setPreviewTemplate(null);
+      router.navigate("/(tabs)/active-workout");
+    }
+  }
+
+  function handleRoutineLongPress(template: TemplateRow) {
+    Alert.alert(template.name, undefined, [
+      {
+        text: "Rename",
+        onPress: () => {
+          setRenameTemplateId(template.id);
+          setRenameDefaultValue(template.name);
+          setRenameVisible(true);
+        },
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            "Delete Routine",
+            `Are you sure you want to delete "${template.name}"?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => {
+                  deleteTemplate(template.id);
+                  refreshData();
+                },
+              },
+            ]
+          );
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  function handleRenameConfirm(newName: string) {
+    if (renameTemplateId !== null) {
+      updateTemplateName(renameTemplateId, newName);
+      refreshData();
+    }
+    setRenameVisible(false);
+    setRenameTemplateId(null);
+  }
+
+  function handleDeleteWorkout(workoutId: number) {
+    deleteWorkout(workoutId);
+    refreshData();
   }
 
   function formatDuration(seconds: number): string {
@@ -36,6 +131,18 @@ export default function HistoryScreen() {
       month: "short",
       day: "numeric",
     });
+  }
+
+  function renderDeleteAction() {
+    return (
+      <TouchableOpacity
+        className="bg-red-500 rounded-xl mb-3 items-center justify-center px-6"
+        activeOpacity={0.8}
+      >
+        <Trash2 size={20} color="#fff" />
+        <Text className="text-white text-xs font-semibold mt-1">Delete</Text>
+      </TouchableOpacity>
+    );
   }
 
   return (
@@ -69,6 +176,37 @@ export default function HistoryScreen() {
           </TouchableOpacity>
         )}
 
+        {!isActive && templates.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-lg font-bold uppercase text-gray-500 mb-3">
+              My Routines
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12 }}
+            >
+              {templates.map((template) => (
+                <TouchableOpacity
+                  key={template.id}
+                  activeOpacity={0.7}
+                  onPress={() => handleRoutineTap(template)}
+                  onLongPress={() => handleRoutineLongPress(template)}
+                >
+                  <Card className="w-40">
+                    <Text
+                      className="text-base font-bold text-gray-900"
+                      numberOfLines={1}
+                    >
+                      {template.name}
+                    </Text>
+                  </Card>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         <Text className="text-lg font-bold uppercase text-gray-500 mb-3">
           Recent Workouts
         </Text>
@@ -77,15 +215,31 @@ export default function HistoryScreen() {
           data={workouts}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
-            <Card className="mb-3">
-              <Text className="text-base font-bold text-gray-900">
-                {item.name}
-              </Text>
-              <Text className="text-sm text-gray-500 mt-1">
-                {formatDate(item.date)} &middot; {formatDuration(item.duration)}{" "}
-                &middot; {Math.round(item.total_volume).toLocaleString()} lbs
-              </Text>
-            </Card>
+            <Swipeable
+              renderRightActions={renderDeleteAction}
+              onSwipeableOpen={() => handleDeleteWorkout(item.id)}
+              overshootRight={false}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  router.push({
+                    pathname: "/workout-detail",
+                    params: { workoutId: String(item.id) },
+                  })
+                }
+              >
+                <Card className="mb-3">
+                  <Text className="text-base font-bold text-gray-900">
+                    {item.name}
+                  </Text>
+                  <Text className="text-sm text-gray-500 mt-1">
+                    {formatDate(item.date)} &middot; {formatDuration(item.duration)}{" "}
+                    &middot; {Math.round(item.total_volume).toLocaleString()} lbs
+                  </Text>
+                </Card>
+              </TouchableOpacity>
+            </Swipeable>
           )}
           ListEmptyComponent={
             <Card>
@@ -98,6 +252,29 @@ export default function HistoryScreen() {
           className="flex-1"
         />
       </View>
+
+      <NameInputModal
+        visible={renameVisible}
+        title="Rename Routine"
+        defaultValue={renameDefaultValue}
+        confirmLabel="Save"
+        onConfirm={handleRenameConfirm}
+        onCancel={() => {
+          setRenameVisible(false);
+          setRenameTemplateId(null);
+        }}
+      />
+
+      <RoutinePreviewModal
+        visible={previewVisible}
+        routineName={previewTemplate?.name ?? ""}
+        exercises={previewExercises}
+        onStart={handlePreviewStart}
+        onClose={() => {
+          setPreviewVisible(false);
+          setPreviewTemplate(null);
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -45,5 +45,31 @@ export function initDatabase(): void {
     );
   `);
 
-  console.log("Database initialized with tables: workouts, exercises, sets");
+  // Add notes column to workouts (for existing installs)
+  try {
+    database.execSync(`ALTER TABLE workouts ADD COLUMN notes TEXT DEFAULT ''`);
+  } catch {
+    // Column already exists — ignore
+  }
+
+  database.execSync(`
+    CREATE TABLE IF NOT EXISTS templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      notes TEXT DEFAULT ''
+    );
+  `);
+
+  database.execSync(`
+    CREATE TABLE IF NOT EXISTS template_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      template_id INTEGER NOT NULL,
+      exercise_name TEXT NOT NULL,
+      muscle_group TEXT,
+      order_index INTEGER DEFAULT 0,
+      FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE CASCADE
+    );
+  `);
+
+  console.log("Database initialized with tables: workouts, exercises, sets, templates, template_exercises");
 }

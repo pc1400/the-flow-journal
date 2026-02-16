@@ -25,8 +25,9 @@ interface WorkoutContextValue extends WorkoutState {
   startWorkout: (name?: string) => void;
   addExercise: (name: string, muscleGroup: string) => void;
   logSet: (exerciseId: number, weight: number, reps: number) => void;
-  finishWorkout: () => void;
+  finishWorkout: (name?: string, notes?: string, duration?: number) => void;
   refreshExerciseSets: (exerciseId: number) => void;
+  startWorkoutFromTemplate: (templateId: number) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
@@ -100,17 +101,47 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const finishWorkout = useCallback(() => {
-    if (!state.workoutId || !state.startTime) return;
-    const duration = Math.floor((Date.now() - state.startTime) / 1000);
-    queries.finishWorkout(state.workoutId, duration);
+  const finishWorkout = useCallback(
+    (name?: string, notes?: string, explicitDuration?: number) => {
+      if (!state.workoutId || !state.startTime) return;
+      const duration =
+        explicitDuration ?? Math.floor((Date.now() - state.startTime) / 1000);
+      queries.finishWorkout(state.workoutId, duration, name, notes);
+      setState({
+        workoutId: null,
+        exercises: [],
+        isActive: false,
+        startTime: null,
+      });
+    },
+    [state.workoutId, state.startTime]
+  );
+
+  const startWorkoutFromTemplate = useCallback((templateId: number) => {
+    const templateExercises = queries.getTemplateExercises(templateId);
+    const id = queries.createWorkout("Workout");
+    const newExercises: WorkoutExercise[] = [];
+    for (const te of templateExercises) {
+      const exId = queries.addExercise(
+        id,
+        te.exercise_name,
+        te.muscle_group ?? "",
+        te.order_index
+      );
+      newExercises.push({
+        id: exId,
+        name: te.exercise_name,
+        muscleGroup: te.muscle_group ?? "",
+        sets: [],
+      });
+    }
     setState({
-      workoutId: null,
-      exercises: [],
-      isActive: false,
-      startTime: null,
+      workoutId: id,
+      exercises: newExercises,
+      isActive: true,
+      startTime: Date.now(),
     });
-  }, [state.workoutId, state.startTime]);
+  }, []);
 
   return (
     <WorkoutContext.Provider
@@ -121,6 +152,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         logSet,
         finishWorkout,
         refreshExerciseSets,
+        startWorkoutFromTemplate,
       }}
     >
       {children}
