@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useWorkout } from "@/src/context/WorkoutContext";
@@ -40,66 +48,76 @@ export default function FocusedEntryScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 p-6">
-        <Text className="text-lg font-semibold text-gray-500 mb-1">
-          {exerciseName}
-        </Text>
-        <Text className="text-4xl font-bold text-gray-900 mb-6">
-          Set {currentSetIndex + 1}
-        </Text>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          <Text className="text-lg font-semibold text-gray-500 mb-1">
+            {exerciseName}
+          </Text>
+          <Text className="text-4xl font-bold text-gray-900 mb-6">
+            Set {currentSetIndex + 1}
+          </Text>
 
-        <View className="flex-1 justify-center gap-4">
-          <View className="bg-white rounded-xl p-6 items-center">
-            <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
-              Weight (lbs)
-            </Text>
-            <TextInput
-              className="text-5xl font-bold text-gray-900 text-center w-full"
-              value={weight}
-              onChangeText={setWeight}
-              placeholder={ghost ? String(ghost.weight) : "0"}
-              placeholderTextColor="#D1D5DB"
-              keyboardType="decimal-pad"
-              selectTextOnFocus
-            />
+          <View className="flex-1 justify-center gap-4">
+            <View className="bg-white rounded-xl p-6 items-center">
+              <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
+                Weight (lbs)
+              </Text>
+              <TextInput
+                className="text-5xl font-bold text-gray-900 text-center w-full"
+                value={weight}
+                onChangeText={setWeight}
+                placeholder={ghost ? String(ghost.weight) : "0"}
+                placeholderTextColor="#D1D5DB"
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+              />
+            </View>
+
+            <View className="bg-white rounded-xl p-6 items-center">
+              <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
+                Reps
+              </Text>
+              <TextInput
+                className="text-5xl font-bold text-gray-900 text-center w-full"
+                value={reps}
+                onChangeText={setReps}
+                placeholder={ghost ? String(ghost.reps) : "0"}
+                placeholderTextColor="#D1D5DB"
+                keyboardType="number-pad"
+                selectTextOnFocus
+              />
+            </View>
           </View>
 
-          <View className="bg-white rounded-xl p-6 items-center">
-            <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
-              Reps
-            </Text>
-            <TextInput
-              className="text-5xl font-bold text-gray-900 text-center w-full"
-              value={reps}
-              onChangeText={setReps}
-              placeholder={ghost ? String(ghost.reps) : "0"}
-              placeholderTextColor="#D1D5DB"
-              keyboardType="number-pad"
-              selectTextOnFocus
-            />
+          <View className="gap-3 mb-4 mt-6">
+            <TouchableOpacity
+              className="bg-primary rounded-xl py-4 items-center"
+              activeOpacity={0.8}
+              onPress={handleLogSet}
+            >
+              <Text className="text-white text-lg font-semibold">Log Set</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-white rounded-xl py-4 items-center border border-gray-200"
+              activeOpacity={0.8}
+              onPress={handleFinish}
+            >
+              <Text className="text-gray-700 text-lg font-semibold">
+                Finish Exercise
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View className="gap-3 mb-4">
-          <TouchableOpacity
-            className="bg-primary rounded-xl py-4 items-center"
-            activeOpacity={0.8}
-            onPress={handleLogSet}
-          >
-            <Text className="text-white text-lg font-semibold">Log Set</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="bg-white rounded-xl py-4 items-center border border-gray-200"
-            activeOpacity={0.8}
-            onPress={handleFinish}
-          >
-            <Text className="text-gray-700 text-lg font-semibold">
-              Finish Exercise
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
