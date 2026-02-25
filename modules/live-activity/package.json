@@ -1,0 +1,9 @@
+{
+  "name": "live-activity",
+  "version": "1.0.0",
+  "description": "Live Activity module for workout tracking",
+  "main": "index.ts",
+  "author": "The Flow Journal",
+  "license": "MIT",
+  "homepage": "https://github.com/pc1400/the-flow-journal"
+}

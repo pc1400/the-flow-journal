@@ -10,6 +10,7 @@ import { WorkoutSummaryModal } from "@/src/components/WorkoutSummaryModal";
 import { NameInputModal } from "@/src/components/NameInputModal";
 import { ExerciseDefinition } from "@/src/data/exercises";
 import { getCompletedSetCount, getTotalVolume, saveWorkoutAsTemplate } from "@/src/db/queries";
+import { endActivity as endLiveActivity } from "../../modules/live-activity";
 
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function ActiveWorkoutScreen() {
   }
 
   function handleSummarySave(name: string, notes: string, saveAsRoutine: boolean) {
+    endLiveActivity();
     const savedDuration = frozenElapsed ?? elapsed;
 
     if (saveAsRoutine && workoutId) {

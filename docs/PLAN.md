@@ -42,5 +42,15 @@
 - **Rename routine** — long-press routine card → Alert with Rename option → `NameInputModal`
 - **Routine preview** — tap routine shows `RoutinePreviewModal` with exercise list + "Jump into Routine" button
 
-## Phase 4: TBD
+## Phase 4: iOS Live Activities
+**Status:** Done (2026-02-24)
+- **Custom local Expo module** (`modules/live-activity/`) — native bridge for ActivityKit `Activity.request()`, `.update()`, `.end()` via `LiveActivityModule.swift`
+- **Shared ActivityKit attributes** (`FlowActivityAttributes.swift`) — exerciseName, exerciseId, deepLinkUrl + ContentState with currentSetNumber, lastSetWeight/Reps, ghostWeight/Reps, isComplete
+- **Widget extension** (`targets/widget/`) via `@bacons/apple-targets` — SwiftUI Live Activity views for Lock Screen (Strava-inspired dark theme, orange "Log Set" deep-link button) and Dynamic Island (expanded/compact/minimal)
+- **Deep-link interactivity** — "Log Set" button on Live Activity opens `theflowjournal://focused-entry?exerciseId=...&exerciseName=...` (works iOS 16.1+, no App Intents needed)
+- **useLiveActivity hook** (`src/hooks/useLiveActivity.ts`) — React Native hook wrapping native module with start/update/end + platform guards
+- **Integration** — focused-entry starts activity on mount, updates after each set, ends on Finish Exercise; active-workout ends any lingering activity on workout finish
+- **Graceful degradation** — module returns no-ops on Android and when running in Expo Go (try/catch around requireNativeModule)
+
+## Phase 5: TBD
 <!-- TODO: Fill in from Gemini conversation -->

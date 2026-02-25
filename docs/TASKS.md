@@ -4,8 +4,10 @@
 
 ## Up Next
 - [ ] Edit sets — tap a completed set to modify weight/reps
+- [ ] Build with Xcode to verify Live Activity on device
 
 ## Done
+- [x] iOS Live Activities — custom Expo module + widget extension for Lock Screen & Dynamic Island workout tracking (2026-02-24)
 - [x] Timer freezes when summary modal opens (2026-02-15)
 - [x] Separate routine naming flow (no notes saved to template) (2026-02-15)
 - [x] Green finished exercises on active-workout screen (2026-02-15)

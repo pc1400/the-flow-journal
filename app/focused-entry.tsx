@@ -21,6 +21,7 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated";
 import { Check } from "lucide-react-native";
+import { useLiveActivity } from "@/src/hooks/useLiveActivity";
 
 export default function FocusedEntryScreen() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function FocusedEntryScreen() {
   const activeSetIndex = sets.length; // next set to log
 
   const { getGhostForSet } = useExerciseHistory(exerciseName ?? "");
+  const { start: startLiveActivity, update: updateLiveActivity, end: endLiveActivity } = useLiveActivity();
 
   const [activePageIndex, setActivePageIndex] = useState(activeSetIndex);
   const [weight, setWeight] = useState("");
@@ -74,6 +76,17 @@ export default function FocusedEntryScreen() {
     }
   }, []);
 
+  // Start Live Activity on mount
+  useEffect(() => {
+    const initialGhost = getGhostForSet(0);
+    startLiveActivity({
+      exerciseName: exerciseName ?? "",
+      exerciseId: numericExerciseId,
+      ghostWeight: initialGhost?.weight,
+      ghostReps: initialGhost?.reps,
+    });
+  }, [numericExerciseId]);
+
   const ghost = getGhostForSet(activeSetIndex);
 
   const isViewingActiveSet = activePageIndex === activeSetIndex;
@@ -99,9 +112,21 @@ export default function FocusedEntryScreen() {
       withTiming(1, { duration: 100 }),
       withDelay(400, withTiming(0, { duration: 200 }))
     );
-  }, [weight, reps, numericExerciseId, logSet, counterScale, checkOpacity]);
+
+    // Update Live Activity
+    const nextSetIndex = activeSetIndex + 1;
+    const nextGhost = getGhostForSet(nextSetIndex);
+    updateLiveActivity({
+      currentSetNumber: nextSetIndex + 1,
+      lastSetWeight: w,
+      lastSetReps: r,
+      ghostWeight: nextGhost?.weight,
+      ghostReps: nextGhost?.reps,
+    });
+  }, [weight, reps, numericExerciseId, logSet, counterScale, checkOpacity, activeSetIndex, getGhostForSet, updateLiveActivity]);
 
   function handleFinish() {
+    endLiveActivity();
     router.back();
   }
 

@@ -1,5 +1,16 @@
 # Work Log
 
+## 2026-02-24 — Claude (Phase 4: iOS Live Activities)
+- Created `modules/live-activity/` — custom local Expo module with `LiveActivityModule.swift` bridging ActivityKit, `FlowActivityAttributes.swift` shared struct, TypeScript wrapper with platform guards
+- Created `targets/widget/` — @bacons/apple-targets widget extension with SwiftUI Live Activity views (Lock Screen + Dynamic Island expanded/compact/minimal), Strava-inspired dark theme with orange accents
+- Created `src/hooks/useLiveActivity.ts` — React Native hook wrapping native module (start/update/end/isSupported)
+- Updated `app/focused-entry.tsx` — starts Live Activity on mount, updates after each logSet, ends on Finish Exercise
+- Updated `app/(tabs)/active-workout.tsx` — ends lingering Live Activity on workout finish
+- Updated `app.json` — added bundleIdentifier, appleTeamId, NSSupportsLiveActivities, @bacons/apple-targets plugin
+- Fixed `requireNativeModule` crash — wrapped in try/catch so module gracefully degrades in Expo Go (returns no-ops)
+- Ran `npx expo prebuild --platform ios --clean` successfully — both LiveActivity pod and FlowActivityWidget extension installed
+- **Note:** Live Activities require a dev client build (`npx expo run:ios`), not Expo Go
+
 ## 2026-02-15 — Claude (Phase 3.5: UX Polish, Set Pager & CRUD)
 - Updated `src/context/WorkoutContext.tsx` — `finishWorkout` now accepts optional explicit duration param
 - Updated `app/(tabs)/active-workout.tsx` — frozenElapsed state freezes timer when summary modal opens; separate routine naming flow via NameInputModal after workout save
