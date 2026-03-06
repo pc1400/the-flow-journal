@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "the-flow-journal",
-    "slug": "the-flow-journal",
+    "name": "Mira",
+    "slug": "mira",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "theflowjournal",
+    "scheme": "mira",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

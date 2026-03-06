@@ -1,4 +1,4 @@
-# The Flow Journal
+# Mira
 
 A gym workout tracking app built with React Native / Expo. Think "Strong" app — log exercises, sets, reps, and weight during workouts, then review history.
 
@@ -25,9 +25,9 @@ npm run lint            # ESLint
 app/                    # expo-router file-based routes
   _layout.tsx           # Root layout (Stack, DB init)
   (tabs)/
-    _layout.tsx         # Tab navigator (History, The Flow)
-    index.tsx           # History screen — recent workouts list
-    active-workout.tsx  # Active workout screen — timer, exercises, sets
+    _layout.tsx         # Tab navigator (Home, Profile)
+    index.tsx           # Home screen — start workout, routines, recent history
+    profile.tsx         # Profile screen — stats summary
 src/
   components/           # Reusable UI components (Card, etc.)
   db/

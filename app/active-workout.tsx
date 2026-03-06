@@ -8,6 +8,7 @@ import { ExerciseCard } from "@/src/components/ExerciseCard";
 import { ExerciseSearch } from "@/src/components/ExerciseSearch";
 import { WorkoutSummaryModal } from "@/src/components/WorkoutSummaryModal";
 import { NameInputModal } from "@/src/components/NameInputModal";
+import { FocusedEntrySheet, FocusedEntrySheetRef } from "@/src/components/FocusedEntrySheet";
 import { ExerciseDefinition } from "@/src/data/exercises";
 import { getCompletedSetCount, getTotalVolume, saveWorkoutAsTemplate } from "@/src/db/queries";
 
@@ -21,6 +22,7 @@ export default function ActiveWorkoutScreen() {
   const [frozenElapsed, setFrozenElapsed] = useState<number | null>(null);
   const [routineNameVisible, setRoutineNameVisible] = useState(false);
   const pendingSaveRef = useRef<{ name: string; notes: string; workoutId: number } | null>(null);
+  const focusedEntryRef = useRef<FocusedEntrySheetRef>(null);
 
   const displayElapsed = frozenElapsed ?? elapsed;
 
@@ -44,10 +46,7 @@ export default function ActiveWorkoutScreen() {
   }
 
   function handleExercisePress(exerciseId: number, exerciseName: string) {
-    router.push({
-      pathname: "/focused-entry",
-      params: { exerciseId: String(exerciseId), exerciseName },
-    });
+    focusedEntryRef.current?.open(exerciseId, exerciseName);
   }
 
   function handleFinish() {
@@ -64,19 +63,16 @@ export default function ActiveWorkoutScreen() {
     const savedDuration = frozenElapsed ?? elapsed;
 
     if (saveAsRoutine && workoutId) {
-      // Capture workoutId before finishWorkout clears it
       pendingSaveRef.current = { name, notes, workoutId };
-      // Save the workout first
       finishWorkout(name, notes, savedDuration);
       setSummaryVisible(false);
       setFrozenElapsed(null);
-      // Then show routine name modal
       setRoutineNameVisible(true);
     } else {
       finishWorkout(name, notes, savedDuration);
       setSummaryVisible(false);
       setFrozenElapsed(null);
-      router.navigate("/(tabs)/");
+      router.navigate("/");
     }
   }
 
@@ -86,28 +82,28 @@ export default function ActiveWorkoutScreen() {
       pendingSaveRef.current = null;
     }
     setRoutineNameVisible(false);
-    router.navigate("/(tabs)/");
+    router.navigate("/");
   }
 
   function handleRoutineNameCancel() {
     pendingSaveRef.current = null;
     setRoutineNameVisible(false);
-    router.navigate("/(tabs)/");
+    router.navigate("/");
   }
 
   if (!isActive && !routineNameVisible) {
     return (
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 px-5 pt-4">
-          <Text className="text-3xl font-bold text-gray-900 mb-2">
-            The Flow
+          <Text className="text-3xl font-sans-bold text-gray-900 mb-2">
+            Workout
           </Text>
           <View className="flex-1 items-center justify-center">
-            <Text className="text-gray-400 text-lg">
+            <Text className="text-gray-400 font-sans text-lg">
               No active workout
             </Text>
-            <Text className="text-gray-400 mt-1">
-              Start one from the History tab
+            <Text className="text-gray-400 font-sans mt-1">
+              Start one from the Home screen
             </Text>
           </View>
         </View>
@@ -118,15 +114,15 @@ export default function ActiveWorkoutScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 px-5 pt-4">
-        <Text className="text-3xl font-bold text-gray-900 mb-2">
-          The Flow
+        <Text className="text-3xl font-sans-bold text-gray-900 mb-2">
+          Workout
         </Text>
 
-        <View className="bg-white rounded-xl p-4 mb-6 items-center shadow-sm">
-          <Text className="text-sm font-bold uppercase text-gray-500 mb-1">
+        <View className="bg-white rounded-card p-4 mb-6 items-center shadow-sm">
+          <Text className="text-xs font-sans-bold uppercase text-gray-400 tracking-widest mb-1">
             Duration
           </Text>
-          <Text className="text-4xl font-bold text-gray-900">
+          <Text className="text-4xl font-sans-bold text-gray-900">
             {hours}:{minutes}:{seconds}
           </Text>
         </View>
@@ -144,7 +140,7 @@ export default function ActiveWorkoutScreen() {
           )}
           ListEmptyComponent={
             <View className="items-center py-8">
-              <Text className="text-gray-400">
+              <Text className="text-gray-400 font-sans">
                 No exercises yet. Add one to begin.
               </Text>
             </View>
@@ -155,24 +151,24 @@ export default function ActiveWorkoutScreen() {
 
         <View className="gap-3 mb-4">
           <TouchableOpacity
-            className="bg-primary rounded-xl py-4 flex-row items-center justify-center"
+            className="bg-primary rounded-full py-4 flex-row items-center justify-center"
             activeOpacity={0.8}
             onPress={() => setSearchVisible(true)}
           >
             <Plus size={20} color="#fff" />
-            <Text className="text-white text-lg font-semibold ml-2">
+            <Text className="text-white text-lg font-sans-bold ml-2">
               Add Exercise
             </Text>
           </TouchableOpacity>
 
           {exercises.length > 0 && (
             <TouchableOpacity
-              className="bg-white rounded-xl py-4 flex-row items-center justify-center border border-gray-200"
+              className="bg-white rounded-full py-4 flex-row items-center justify-center border border-gray-200"
               activeOpacity={0.8}
               onPress={handleFinish}
             >
               <CheckCircle size={20} color="#22C55E" />
-              <Text className="text-gray-700 text-lg font-semibold ml-2">
+              <Text className="text-gray-700 text-lg font-sans-bold ml-2">
                 Finish Workout
               </Text>
             </TouchableOpacity>
@@ -205,6 +201,8 @@ export default function ActiveWorkoutScreen() {
         onConfirm={handleRoutineNameConfirm}
         onCancel={handleRoutineNameCancel}
       />
+
+      <FocusedEntrySheet ref={focusedEntryRef} />
     </SafeAreaView>
   );
 }

@@ -3,12 +3,33 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { initDatabase } from "@/src/db/db";
 import { WorkoutProvider } from "@/src/context/WorkoutContext";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import "../global.css";
 
 // Initialize DB at module load — before any component renders or queries
 initDatabase();
 
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -16,11 +37,8 @@ export default function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
-            name="focused-entry"
-            options={{
-              headerShown: false,
-              presentation: "card",
-            }}
+            name="active-workout"
+            options={{ headerShown: false, presentation: "card" }}
           />
           <Stack.Screen
             name="workout-detail"

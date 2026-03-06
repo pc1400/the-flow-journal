@@ -16,6 +16,7 @@ import {
 import { Card } from "@/src/components/Card";
 import { NameInputModal } from "@/src/components/NameInputModal";
 import { RoutinePreviewModal } from "@/src/components/RoutinePreviewModal";
+import { ActiveWorkoutFAB } from "@/src/components/ActiveWorkoutFAB";
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Swipeable } from "react-native-gesture-handler";
@@ -50,7 +51,7 @@ export default function HistoryScreen() {
 
   function handleStartWorkout() {
     startWorkout("Workout");
-    router.navigate("/(tabs)/active-workout");
+    router.push("/active-workout");
   }
 
   function handleRoutineTap(template: TemplateRow) {
@@ -65,7 +66,7 @@ export default function HistoryScreen() {
       startWorkoutFromTemplate(previewTemplate.id);
       setPreviewVisible(false);
       setPreviewTemplate(null);
-      router.navigate("/(tabs)/active-workout");
+      router.push("/active-workout");
     }
   }
 
@@ -136,11 +137,11 @@ export default function HistoryScreen() {
   function renderDeleteAction() {
     return (
       <TouchableOpacity
-        className="bg-red-500 rounded-xl mb-3 items-center justify-center px-6"
+        className="bg-red-500 rounded-card mb-3 items-center justify-center px-6"
         activeOpacity={0.8}
       >
         <Trash2 size={20} color="#fff" />
-        <Text className="text-white text-xs font-semibold mt-1">Delete</Text>
+        <Text className="text-white text-xs font-sans-bold mt-1">Delete</Text>
       </TouchableOpacity>
     );
   }
@@ -148,17 +149,17 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 px-5 pt-4">
-        <Text className="text-3xl font-bold text-gray-900 mb-6">
-          The Flow Journal
+        <Text className="text-3xl font-sans-bold text-gray-900 mb-6">
+          Mira
         </Text>
 
         {!isActive && (
           <TouchableOpacity
-            className="bg-primary rounded-xl py-4 items-center mb-6"
+            className="bg-primary rounded-full py-4 items-center mb-6"
             activeOpacity={0.8}
             onPress={handleStartWorkout}
           >
-            <Text className="text-white text-lg font-semibold">
+            <Text className="text-white text-lg font-sans-bold">
               Start Empty Workout
             </Text>
           </TouchableOpacity>
@@ -166,11 +167,11 @@ export default function HistoryScreen() {
 
         {isActive && (
           <TouchableOpacity
-            className="bg-white rounded-xl py-4 items-center mb-6 border-2 border-primary"
+            className="bg-white rounded-full py-4 items-center mb-6 border-2 border-primary"
             activeOpacity={0.8}
-            onPress={() => router.navigate("/(tabs)/active-workout")}
+            onPress={() => router.push("/active-workout")}
           >
-            <Text className="text-primary text-lg font-semibold">
+            <Text className="text-primary text-lg font-sans-bold">
               Continue Workout
             </Text>
           </TouchableOpacity>
@@ -178,7 +179,7 @@ export default function HistoryScreen() {
 
         {!isActive && templates.length > 0 && (
           <View className="mb-6">
-            <Text className="text-lg font-bold uppercase text-gray-500 mb-3">
+            <Text className="text-xs font-sans-bold uppercase text-gray-400 tracking-widest mb-3">
               My Routines
             </Text>
             <ScrollView
@@ -195,7 +196,7 @@ export default function HistoryScreen() {
                 >
                   <Card className="w-40">
                     <Text
-                      className="text-base font-bold text-gray-900"
+                      className="text-base font-sans-bold text-gray-900"
                       numberOfLines={1}
                     >
                       {template.name}
@@ -207,7 +208,7 @@ export default function HistoryScreen() {
           </View>
         )}
 
-        <Text className="text-lg font-bold uppercase text-gray-500 mb-3">
+        <Text className="text-xs font-sans-bold uppercase text-gray-400 tracking-widest mb-3">
           Recent Workouts
         </Text>
 
@@ -230,10 +231,10 @@ export default function HistoryScreen() {
                 }
               >
                 <Card className="mb-3">
-                  <Text className="text-base font-bold text-gray-900">
+                  <Text className="text-base font-sans-bold text-gray-900">
                     {item.name}
                   </Text>
-                  <Text className="text-sm text-gray-500 mt-1">
+                  <Text className="text-sm font-sans text-gray-500 mt-1">
                     {formatDate(item.date)} &middot; {formatDuration(item.duration)}{" "}
                     &middot; {Math.round(item.total_volume).toLocaleString()} lbs
                   </Text>
@@ -243,7 +244,7 @@ export default function HistoryScreen() {
           )}
           ListEmptyComponent={
             <Card>
-              <Text className="text-gray-400 text-center py-8">
+              <Text className="text-gray-400 font-sans text-center py-8">
                 No workouts yet. Start your first flow!
               </Text>
             </Card>
@@ -275,6 +276,8 @@ export default function HistoryScreen() {
           setPreviewTemplate(null);
         }}
       />
+
+      <ActiveWorkoutFAB />
     </SafeAreaView>
   );
 }

@@ -1,29 +1,31 @@
 import { Tabs } from "expo-router";
-import { Clock, History } from "lucide-react-native";
+import { Home, User } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#007AFF",
+        tabBarActiveTintColor: "#4AA564",
         headerShown: false,
+        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 11 },
+        tabBarStyle: { borderTopWidth: 0.5 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "History",
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <History size={size} color={color} />
+            <Home size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="active-workout"
+        name="profile"
         options={{
-          title: "The Flow",
+          title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <Clock size={size} color={color} />
+            <User size={size} color={color} />
           ),
         }}
       />
