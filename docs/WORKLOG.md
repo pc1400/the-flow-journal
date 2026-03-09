@@ -1,5 +1,32 @@
 # Work Log
 
+## 2026-03-02 — Claude (Phase 4.5: UX — Unit Picker, Superset Auto-Advance, Drag Reorder)
+- Updated `src/db/queries.ts` — added `updateExerciseUnit` and `batchUpdateExerciseOrder` functions
+- Updated `src/context/WorkoutContext.tsx` — added `updateExerciseUnit` (persists unit change per exercise) and `reorderExercises` (reorders state + persists via batch update)
+- Updated `app/focused-entry.tsx` — tappable lbs/kg unit pill on weight inputs, superset auto-advance (auto-jumps to next exercise after 600ms), rest timer carries across navigation via `restTimerStartedAt` param, "Next: {name}" hint shown in supersets
+- Updated `src/components/RestTimer.tsx` — added `startedAt` prop for computing initial remaining time when timer carries across screens
+- Updated `app/(tabs)/active-workout.tsx` — replaced ScrollView with `DraggableExerciseList`, removed "Link Superset" selection mode (selectMode, selectedIds, handleToggleSelect, handleCreateSuperset buttons), passes `supersetGroup` in route params
+- Created `src/components/DraggableExerciseList.tsx` — gesture-based drag list using react-native-gesture-handler Pan with long-press activation; supports drag-to-reorder (blue insertion line) and drag-to-merge-superset (purple highlight + "Drop to superset" hint); superset groups drag as a unit
+- Updated `src/components/ExerciseCard.tsx` — removed `selectable`/`selected`/`onToggleSelect` props
+- Updated `src/components/SupersetCard.tsx` — removed `selectable`/`selectedIds`/`onToggleSelect` props
+
+## 2026-03-02 — Claude (Phase 4: Feature Pack — Rest Timer, Custom Exercises, Supersets, Metrics)
+- Updated `src/db/db.ts` — added `custom_exercises` table, ALTER TABLE migrations for `metric_type`, `superset_group`, `unit` on exercises, `value` on sets, `metric_type`/`superset_group` on template_exercises
+- Updated `src/data/exercises.ts` — extended `ExerciseDefinition` with `metricType`, `isBodyweight`, `defaultUnit`; marked Push-Up/Pull-Up/Hanging Leg Raise as bodyweight_reps, Plank as time; added `CustomExerciseRow` interface and `getAllExercises()` merge helper
+- Updated `src/db/queries.ts` — added `value` to SetRow, `metric_type`/`superset_group`/`unit` to ExerciseRow/TemplateExerciseRow; updated `addExercise`/`logSet`/`getLastSessionSets`/`finishWorkout`/`getTotalVolume`/`saveWorkoutAsTemplate`/`addTemplateExercise` for new columns; added `createCustomExercise`, `getAllCustomExercises`, `deleteCustomExercise`, `updateSupersetGroup`, `getNextSupersetGroup`
+- Updated `src/context/WorkoutContext.tsx` — added `value` to WorkoutSet; added `metricType`/`unit`/`supersetGroup` to WorkoutExercise; updated `addExercise`/`logSet` signatures; added `createSupersetFromExercises`/`removeSupersetGroup` methods
+- Updated `src/hooks/useExerciseHistory.ts` — added `value` to GhostSet interface
+- Updated `app/focused-entry.tsx` — metric-aware inputs (weight_reps, bodyweight_reps with "+ Add Weight" toggle, distance, time); rest timer auto-starts after Log Set; renamed "Finish Exercise" → "Back to Workout"
+- Created `src/components/RestTimer.tsx` — full-screen overlay with countdown, +/- 15s buttons, skip button, haptic buzz on completion
+- Created `src/components/CreateExerciseModal.tsx` — modal with name/muscle group/metric type pickers, validates uniqueness
+- Updated `src/components/ExerciseSearch.tsx` — loads custom exercises from DB on mount, merges with builtins, "Create Custom Exercise" button always visible
+- Updated `src/components/ExerciseCard.tsx` — added `selectable`/`selected`/`onToggleSelect` props for superset selection mode with checkbox icons
+- Created `src/components/SupersetCard.tsx` — wraps multiple ExerciseCards with purple left border and "SUPERSET" label, long-press to ungroup
+- Updated `app/(tabs)/active-workout.tsx` — passes `metricType`/`unit` to focused-entry; superset selection mode with "Link Superset" button, grouped exercise rendering via `useMemo`, "Create Superset" and "Cancel" buttons
+- Updated `app/workout-detail.tsx` — formats sets per metric type (weight×reps, BW×reps, distance m, time s); conditional volume display
+- Updated `app/(tabs)/index.tsx` — conditional volume display in history cards (hidden when 0)
+- Updated `src/components/WorkoutSummaryModal.tsx` — conditional volume stat (hidden when 0), added "lbs" label
+
 ## 2026-02-15 — Claude (Phase 3.5: UX Polish, Set Pager & CRUD)
 - Updated `src/context/WorkoutContext.tsx` — `finishWorkout` now accepts optional explicit duration param
 - Updated `app/(tabs)/active-workout.tsx` — frozenElapsed state freezes timer when summary modal opens; separate routine naming flow via NameInputModal after workout save

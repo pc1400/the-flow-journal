@@ -6,6 +6,16 @@
 - [ ] Edit sets — tap a completed set to modify weight/reps
 
 ## Done
+- [x] Unit picker — tappable lbs/kg pill on weight inputs, persists per exercise (2026-03-02)
+- [x] Superset auto-advance — after logging set, auto-jumps to next exercise in superset with rest timer carry-over (2026-03-02)
+- [x] Drag-to-reorder exercises — long-press to drag, reorder with blue insertion line (2026-03-02)
+- [x] Drag-to-superset — drop exercise onto another to create superset, replaces Link Superset button (2026-03-02)
+- [x] Rest timer — auto-starts after logging a set, 90s countdown, +/- 15s adjust, skip (2026-03-02)
+- [x] Custom exercises — CreateExerciseModal, saved to DB, appear in search (2026-03-02)
+- [x] Metric types — weight_reps, bodyweight_reps, distance, time with metric-aware UI (2026-03-02)
+- [x] Supersets — selection mode, grouped rendering with SupersetCard, ungroup via long-press (2026-03-02)
+- [x] Bodyweight exercises — reps-only input with optional "+ Add Weight" toggle (2026-03-02)
+- [x] Rename "Finish Exercise" → "Back to Workout" (2026-03-02)
 - [x] Timer freezes when summary modal opens (2026-02-15)
 - [x] Separate routine naming flow (no notes saved to template) (2026-02-15)
 - [x] Green finished exercises on active-workout screen (2026-02-15)

@@ -1,20 +1,33 @@
-import { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Plus, CheckCircle } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { useWorkout } from "@/src/context/WorkoutContext";
-import { ExerciseCard } from "@/src/components/ExerciseCard";
+import { useWorkout, WorkoutExercise } from "@/src/context/WorkoutContext";
+import { DraggableExerciseList } from "@/src/components/DraggableExerciseList";
 import { ExerciseSearch } from "@/src/components/ExerciseSearch";
 import { WorkoutSummaryModal } from "@/src/components/WorkoutSummaryModal";
 import { NameInputModal } from "@/src/components/NameInputModal";
 import { ExerciseDefinition } from "@/src/data/exercises";
 import { getCompletedSetCount, getTotalVolume, saveWorkoutAsTemplate } from "@/src/db/queries";
 
+type GroupedItem =
+  | { type: "single"; exercise: WorkoutExercise }
+  | { type: "superset"; group: number; exercises: WorkoutExercise[] };
+
 export default function ActiveWorkoutScreen() {
   const router = useRouter();
-  const { isActive, exercises, addExercise, finishWorkout, startTime, workoutId } =
-    useWorkout();
+  const {
+    isActive,
+    exercises,
+    addExercise,
+    finishWorkout,
+    startTime,
+    workoutId,
+    createSupersetFromExercises,
+    removeSupersetGroup,
+    reorderExercises,
+  } = useWorkout();
   const [searchVisible, setSearchVisible] = useState(false);
   const [summaryVisible, setSummaryVisible] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -39,16 +52,72 @@ export default function ActiveWorkoutScreen() {
   const minutes = String(Math.floor((displayElapsed % 3600) / 60)).padStart(2, "0");
   const seconds = String(displayElapsed % 60).padStart(2, "0");
 
+  // Group exercises by supersetGroup for rendering
+  const groupedItems = useMemo((): GroupedItem[] => {
+    const items: GroupedItem[] = [];
+    const seen = new Set<number>();
+
+    for (const ex of exercises) {
+      if (seen.has(ex.id)) continue;
+
+      if (ex.supersetGroup != null) {
+        const groupExercises = exercises.filter(
+          (e) => e.supersetGroup === ex.supersetGroup
+        );
+        for (const ge of groupExercises) seen.add(ge.id);
+        items.push({ type: "superset", group: ex.supersetGroup, exercises: groupExercises });
+      } else {
+        seen.add(ex.id);
+        items.push({ type: "single", exercise: ex });
+      }
+    }
+
+    return items;
+  }, [exercises]);
+
   function handleSelectExercise(exercise: ExerciseDefinition) {
-    addExercise(exercise.name, exercise.muscleGroup);
+    addExercise(exercise.name, exercise.muscleGroup, exercise.metricType, exercise.defaultUnit);
   }
 
-  function handleExercisePress(exerciseId: number, exerciseName: string) {
-    router.push({
-      pathname: "/focused-entry",
-      params: { exerciseId: String(exerciseId), exerciseName },
-    });
-  }
+  const handleExercisePress = useCallback(
+    (exerciseId: number, exerciseName: string) => {
+      const ex = exercises.find((e) => e.id === exerciseId);
+      router.push({
+        pathname: "/focused-entry",
+        params: {
+          exerciseId: String(exerciseId),
+          exerciseName,
+          metricType: ex?.metricType ?? "weight_reps",
+          unit: ex?.unit ?? "lbs",
+          supersetGroup: ex?.supersetGroup != null ? String(ex.supersetGroup) : "",
+        },
+      });
+    },
+    [exercises, router]
+  );
+
+  const handleUngroupSuperset = useCallback(
+    (exerciseIds: number[]) => {
+      for (const id of exerciseIds) {
+        removeSupersetGroup(id);
+      }
+    },
+    [removeSupersetGroup]
+  );
+
+  const handleReorder = useCallback(
+    (orderedIds: number[]) => {
+      reorderExercises(orderedIds);
+    },
+    [reorderExercises]
+  );
+
+  const handleCreateSuperset = useCallback(
+    (exerciseIds: number[]) => {
+      createSupersetFromExercises(exerciseIds);
+    },
+    [createSupersetFromExercises]
+  );
 
   function handleFinish() {
     setFrozenElapsed(elapsed);
@@ -64,13 +133,10 @@ export default function ActiveWorkoutScreen() {
     const savedDuration = frozenElapsed ?? elapsed;
 
     if (saveAsRoutine && workoutId) {
-      // Capture workoutId before finishWorkout clears it
       pendingSaveRef.current = { name, notes, workoutId };
-      // Save the workout first
       finishWorkout(name, notes, savedDuration);
       setSummaryVisible(false);
       setFrozenElapsed(null);
-      // Then show routine name modal
       setRoutineNameVisible(true);
     } else {
       finishWorkout(name, notes, savedDuration);
@@ -131,26 +197,12 @@ export default function ActiveWorkoutScreen() {
           </Text>
         </View>
 
-        <FlatList
-          data={exercises}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <ExerciseCard
-              name={item.name}
-              muscleGroup={item.muscleGroup}
-              setCount={item.sets.length}
-              onPress={() => handleExercisePress(item.id, item.name)}
-            />
-          )}
-          ListEmptyComponent={
-            <View className="items-center py-8">
-              <Text className="text-gray-400">
-                No exercises yet. Add one to begin.
-              </Text>
-            </View>
-          }
-          contentContainerStyle={{ paddingBottom: 16 }}
-          className="flex-1"
+        <DraggableExerciseList
+          groupedItems={groupedItems}
+          onExercisePress={handleExercisePress}
+          onUngroup={handleUngroupSuperset}
+          onReorder={handleReorder}
+          onCreateSuperset={handleCreateSuperset}
         />
 
         <View className="gap-3 mb-4">

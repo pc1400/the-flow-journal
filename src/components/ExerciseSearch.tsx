@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import { X } from "lucide-react-native";
-import { EXERCISES, ExerciseDefinition } from "@/src/data/exercises";
+import { X, Plus } from "lucide-react-native";
+import { EXERCISES, ExerciseDefinition, getAllExercises } from "@/src/data/exercises";
+import { getAllCustomExercises } from "@/src/db/queries";
+import { CreateExerciseModal } from "./CreateExerciseModal";
 
 interface ExerciseSearchProps {
   visible: boolean;
@@ -22,8 +24,21 @@ export function ExerciseSearch({
   onSelect,
 }: ExerciseSearchProps) {
   const [query, setQuery] = useState("");
+  const [allExercises, setAllExercises] = useState<ExerciseDefinition[]>(EXERCISES);
+  const [createVisible, setCreateVisible] = useState(false);
 
-  const filtered = EXERCISES.filter(
+  function loadExercises() {
+    const customs = getAllCustomExercises();
+    setAllExercises(getAllExercises(customs));
+  }
+
+  useEffect(() => {
+    if (visible) {
+      loadExercises();
+    }
+  }, [visible]);
+
+  const filtered = allExercises.filter(
     (ex) =>
       ex.name.toLowerCase().includes(query.toLowerCase()) ||
       ex.muscleGroup.toLowerCase().includes(query.toLowerCase())
@@ -33,6 +48,10 @@ export function ExerciseSearch({
     onSelect(exercise);
     setQuery("");
     onClose();
+  }
+
+  function handleCreated() {
+    loadExercises();
   }
 
   return (
@@ -62,6 +81,18 @@ export function ExerciseSearch({
           data={filtered}
           keyExtractor={(item) => item.name}
           contentContainerStyle={{ paddingHorizontal: 20 }}
+          ListHeaderComponent={
+            <TouchableOpacity
+              className="bg-white rounded-xl p-4 mb-3 flex-row items-center border border-dashed border-gray-300"
+              activeOpacity={0.7}
+              onPress={() => setCreateVisible(true)}
+            >
+              <Plus size={20} color="#007AFF" />
+              <Text className="text-base font-bold text-primary ml-2">
+                Create Custom Exercise
+              </Text>
+            </TouchableOpacity>
+          }
           renderItem={({ item }) => (
             <TouchableOpacity
               className="bg-white rounded-xl p-4 mb-3"
@@ -83,6 +114,12 @@ export function ExerciseSearch({
           }
         />
       </View>
+
+      <CreateExerciseModal
+        visible={createVisible}
+        onClose={() => setCreateVisible(false)}
+        onCreated={handleCreated}
+      />
     </Modal>
   );
 }

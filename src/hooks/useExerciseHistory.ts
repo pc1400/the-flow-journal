@@ -4,6 +4,7 @@ import { getLastSessionSets } from "@/src/db/queries";
 interface GhostSet {
   weight: number;
   reps: number;
+  value: number;
 }
 
 export function useExerciseHistory(exerciseName: string) {

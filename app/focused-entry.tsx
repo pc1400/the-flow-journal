@@ -21,26 +21,74 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated";
 import { Check } from "lucide-react-native";
+import { RestTimer } from "@/src/components/RestTimer";
 
 export default function FocusedEntryScreen() {
   const router = useRouter();
-  const { exerciseId, exerciseName } = useLocalSearchParams<{
+  const {
+    exerciseId,
+    exerciseName,
+    metricType: paramMetricType,
+    unit: paramUnit,
+    supersetGroup: paramSupersetGroup,
+    restTimerStartedAt: paramRestTimerStartedAt,
+  } = useLocalSearchParams<{
     exerciseId: string;
     exerciseName: string;
+    metricType: string;
+    unit: string;
+    supersetGroup: string;
+    restTimerStartedAt: string;
   }>();
 
-  const { logSet, exercises } = useWorkout();
+  const metricType = paramMetricType || "weight_reps";
+  const unit = paramUnit || "lbs";
+  const supersetGroup = paramSupersetGroup || "";
+
+  const { logSet, exercises, updateExerciseUnit } = useWorkout();
   const numericExerciseId = Number(exerciseId);
 
   const exercise = exercises.find((ex) => ex.id === numericExerciseId);
   const sets = exercise?.sets ?? [];
-  const activeSetIndex = sets.length; // next set to log
+  const activeSetIndex = sets.length;
 
   const { getGhostForSet } = useExerciseHistory(exerciseName ?? "");
 
   const [activePageIndex, setActivePageIndex] = useState(activeSetIndex);
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
+  const [value, setValue] = useState("");
+  const [showAddWeight, setShowAddWeight] = useState(false);
+  const [restTimerActive, setRestTimerActive] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState(unit);
+
+  const toggleUnit = useCallback(() => {
+    const newUnit = selectedUnit === "lbs" ? "kg" : "lbs";
+    setSelectedUnit(newUnit);
+    updateExerciseUnit(numericExerciseId, newUnit);
+  }, [selectedUnit, numericExerciseId, updateExerciseUnit]);
+
+  // Superset auto-advance
+  const supersetExercises = supersetGroup
+    ? exercises.filter((ex) => ex.supersetGroup != null && String(ex.supersetGroup) === supersetGroup)
+    : [];
+  const currentIndexInSuperset = supersetExercises.findIndex((ex) => ex.id === numericExerciseId);
+  const nextSupersetExercise =
+    supersetExercises.length >= 2
+      ? supersetExercises[(currentIndexInSuperset + 1) % supersetExercises.length]
+      : null;
+
+  // Auto-activate rest timer if navigated with restTimerStartedAt
+  const [restTimerStartedAt, setRestTimerStartedAt] = useState<number | undefined>(
+    paramRestTimerStartedAt ? Number(paramRestTimerStartedAt) : undefined
+  );
+
+  useEffect(() => {
+    if (paramRestTimerStartedAt) {
+      setRestTimerActive(true);
+      setRestTimerStartedAt(Number(paramRestTimerStartedAt));
+    }
+  }, [paramRestTimerStartedAt]);
 
   // Animation values
   const counterScale = useSharedValue(1);
@@ -57,11 +105,20 @@ export default function FocusedEntryScreen() {
   // Snap to the active set when a new set is logged
   useEffect(() => {
     setActivePageIndex(activeSetIndex);
-    // Pre-fill inputs from last logged set for the next set
     const lastSet = sets[sets.length - 1];
     if (lastSet) {
-      setWeight(lastSet.weight.toString());
-      setReps(lastSet.reps.toString());
+      if (metricType === "weight_reps") {
+        setWeight(lastSet.weight.toString());
+        setReps(lastSet.reps.toString());
+      } else if (metricType === "bodyweight_reps") {
+        setReps(lastSet.reps.toString());
+        if (lastSet.weight > 0) {
+          setWeight(lastSet.weight.toString());
+          setShowAddWeight(true);
+        }
+      } else if (metricType === "distance" || metricType === "time") {
+        setValue(lastSet.value.toString());
+      }
     }
   }, [activeSetIndex]);
 
@@ -69,37 +126,79 @@ export default function FocusedEntryScreen() {
   useEffect(() => {
     const lastSet = sets[sets.length - 1];
     if (lastSet) {
-      setWeight(lastSet.weight.toString());
-      setReps(lastSet.reps.toString());
+      if (metricType === "weight_reps") {
+        setWeight(lastSet.weight.toString());
+        setReps(lastSet.reps.toString());
+      } else if (metricType === "bodyweight_reps") {
+        setReps(lastSet.reps.toString());
+        if (lastSet.weight > 0) {
+          setWeight(lastSet.weight.toString());
+          setShowAddWeight(true);
+        }
+      } else if (metricType === "distance" || metricType === "time") {
+        setValue(lastSet.value.toString());
+      }
     }
   }, []);
 
   const ghost = getGhostForSet(activeSetIndex);
-
   const isViewingActiveSet = activePageIndex === activeSetIndex;
 
   const handleLogSet = useCallback(() => {
-    const w = parseFloat(weight) || 0;
-    const r = parseInt(reps, 10) || 0;
-    if (r === 0) return;
+    let w = 0;
+    let r = 0;
+    let v = 0;
 
-    logSet(numericExerciseId, w, r);
+    if (metricType === "weight_reps") {
+      w = parseFloat(weight) || 0;
+      r = parseInt(reps, 10) || 0;
+      if (r === 0) return;
+    } else if (metricType === "bodyweight_reps") {
+      w = showAddWeight ? (parseFloat(weight) || 0) : 0;
+      r = parseInt(reps, 10) || 0;
+      if (r === 0) return;
+    } else if (metricType === "distance") {
+      v = parseFloat(value) || 0;
+      if (v === 0) return;
+    } else if (metricType === "time") {
+      v = parseFloat(value) || 0;
+      if (v === 0) return;
+    }
 
-    // Haptic feedback
+    logSet(numericExerciseId, w, r, v);
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Scale pulse on counter
     counterScale.value = withSequence(
       withTiming(1.3, { duration: 100 }),
       withTiming(1.0, { duration: 200 })
     );
 
-    // Brief checkmark flash
     checkOpacity.value = withSequence(
       withTiming(1, { duration: 100 }),
       withDelay(400, withTiming(0, { duration: 200 }))
     );
-  }, [weight, reps, numericExerciseId, logSet, counterScale, checkOpacity]);
+
+    setRestTimerActive(true);
+    setRestTimerStartedAt(Date.now());
+
+    // Auto-advance to next exercise in superset
+    if (nextSupersetExercise) {
+      setTimeout(() => {
+        router.replace({
+          pathname: "/focused-entry",
+          params: {
+            exerciseId: String(nextSupersetExercise.id),
+            exerciseName: nextSupersetExercise.name,
+            metricType: nextSupersetExercise.metricType ?? "weight_reps",
+            unit: nextSupersetExercise.unit ?? "lbs",
+            supersetGroup,
+            restTimerStartedAt: String(Date.now()),
+          },
+        });
+      }, 600);
+    }
+  }, [weight, reps, value, metricType, showAddWeight, numericExerciseId, logSet, counterScale, checkOpacity, nextSupersetExercise, supersetGroup, router]);
 
   function handleFinish() {
     router.back();
@@ -109,23 +208,79 @@ export default function FocusedEntryScreen() {
   function renderLoggedSet(setIndex: number) {
     const s = sets[setIndex];
     if (!s) return null;
+
+    if (metricType === "weight_reps") {
+      return (
+        <View className="flex-1 justify-center gap-4">
+          <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
+            <Text className="text-sm font-bold uppercase text-green-700 mb-2">
+              Weight ({selectedUnit})
+            </Text>
+            <Text className="text-5xl font-bold text-green-800 text-center">
+              {s.weight}
+            </Text>
+          </View>
+          <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
+            <Text className="text-sm font-bold uppercase text-green-700 mb-2">
+              Reps
+            </Text>
+            <Text className="text-5xl font-bold text-green-800 text-center">
+              {s.reps}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (metricType === "bodyweight_reps") {
+      return (
+        <View className="flex-1 justify-center gap-4">
+          {s.weight > 0 && (
+            <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
+              <Text className="text-sm font-bold uppercase text-green-700 mb-2">
+                Added Weight ({selectedUnit})
+              </Text>
+              <Text className="text-5xl font-bold text-green-800 text-center">
+                {s.weight}
+              </Text>
+            </View>
+          )}
+          <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
+            <Text className="text-sm font-bold uppercase text-green-700 mb-2">
+              Reps
+            </Text>
+            <Text className="text-5xl font-bold text-green-800 text-center">
+              {s.reps}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (metricType === "distance") {
+      return (
+        <View className="flex-1 justify-center gap-4">
+          <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
+            <Text className="text-sm font-bold uppercase text-green-700 mb-2">
+              Distance (m)
+            </Text>
+            <Text className="text-5xl font-bold text-green-800 text-center">
+              {s.value}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // time
     return (
       <View className="flex-1 justify-center gap-4">
         <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
           <Text className="text-sm font-bold uppercase text-green-700 mb-2">
-            Weight (lbs)
+            Time (seconds)
           </Text>
           <Text className="text-5xl font-bold text-green-800 text-center">
-            {s.weight}
-          </Text>
-        </View>
-
-        <View className="bg-green-50 rounded-xl p-6 items-center border border-green-200">
-          <Text className="text-sm font-bold uppercase text-green-700 mb-2">
-            Reps
-          </Text>
-          <Text className="text-5xl font-bold text-green-800 text-center">
-            {s.reps}
+            {s.value}
           </Text>
         </View>
       </View>
@@ -134,34 +289,138 @@ export default function FocusedEntryScreen() {
 
   // Render the active set (editable)
   function renderActiveSet() {
+    if (metricType === "weight_reps") {
+      return (
+        <View className="flex-1 justify-center gap-4">
+          <View className="bg-white rounded-xl p-6 items-center">
+            <View className="flex-row items-center gap-2 mb-2">
+              <Text className="text-sm font-bold uppercase text-gray-500">
+                Weight
+              </Text>
+              <TouchableOpacity
+                onPress={toggleUnit}
+                className="bg-gray-100 rounded-full px-3 py-1"
+              >
+                <Text className="text-sm font-bold text-primary">{selectedUnit}</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              className="text-5xl font-bold text-gray-900 text-center w-full"
+              value={weight}
+              onChangeText={setWeight}
+              placeholder={ghost ? String(ghost.weight) : "0"}
+              placeholderTextColor="#D1D5DB"
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+          </View>
+          <View className="bg-white rounded-xl p-6 items-center">
+            <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
+              Reps
+            </Text>
+            <TextInput
+              className="text-5xl font-bold text-gray-900 text-center w-full"
+              value={reps}
+              onChangeText={setReps}
+              placeholder={ghost ? String(ghost.reps) : "0"}
+              placeholderTextColor="#D1D5DB"
+              keyboardType="number-pad"
+              selectTextOnFocus
+            />
+          </View>
+        </View>
+      );
+    }
+
+    if (metricType === "bodyweight_reps") {
+      return (
+        <View className="flex-1 justify-center gap-4">
+          {showAddWeight ? (
+            <View className="bg-white rounded-xl p-6 items-center">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Text className="text-sm font-bold uppercase text-gray-500">
+                  Added Weight
+                </Text>
+                <TouchableOpacity
+                  onPress={toggleUnit}
+                  className="bg-gray-100 rounded-full px-3 py-1"
+                >
+                  <Text className="text-sm font-bold text-primary">{selectedUnit}</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                className="text-5xl font-bold text-gray-900 text-center w-full"
+                value={weight}
+                onChangeText={setWeight}
+                placeholder="0"
+                placeholderTextColor="#D1D5DB"
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+              />
+            </View>
+          ) : (
+            <TouchableOpacity
+              className="items-center py-2"
+              onPress={() => setShowAddWeight(true)}
+            >
+              <Text className="text-primary text-base font-semibold">
+                + Add Weight
+              </Text>
+            </TouchableOpacity>
+          )}
+          <View className="bg-white rounded-xl p-6 items-center">
+            <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
+              Reps
+            </Text>
+            <TextInput
+              className="text-5xl font-bold text-gray-900 text-center w-full"
+              value={reps}
+              onChangeText={setReps}
+              placeholder={ghost ? String(ghost.reps) : "0"}
+              placeholderTextColor="#D1D5DB"
+              keyboardType="number-pad"
+              selectTextOnFocus
+            />
+          </View>
+        </View>
+      );
+    }
+
+    if (metricType === "distance") {
+      return (
+        <View className="flex-1 justify-center gap-4">
+          <View className="bg-white rounded-xl p-6 items-center">
+            <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
+              Distance (m)
+            </Text>
+            <TextInput
+              className="text-5xl font-bold text-gray-900 text-center w-full"
+              value={value}
+              onChangeText={setValue}
+              placeholder={ghost ? String(ghost.value) : "0"}
+              placeholderTextColor="#D1D5DB"
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
+          </View>
+        </View>
+      );
+    }
+
+    // time
     return (
       <View className="flex-1 justify-center gap-4">
         <View className="bg-white rounded-xl p-6 items-center">
           <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
-            Weight (lbs)
+            Time (seconds)
           </Text>
           <TextInput
             className="text-5xl font-bold text-gray-900 text-center w-full"
-            value={weight}
-            onChangeText={setWeight}
-            placeholder={ghost ? String(ghost.weight) : "0"}
+            value={value}
+            onChangeText={setValue}
+            placeholder={ghost ? String(ghost.value) : "0"}
             placeholderTextColor="#D1D5DB"
             keyboardType="decimal-pad"
-            selectTextOnFocus
-          />
-        </View>
-
-        <View className="bg-white rounded-xl p-6 items-center">
-          <Text className="text-sm font-bold uppercase text-gray-500 mb-2">
-            Reps
-          </Text>
-          <TextInput
-            className="text-5xl font-bold text-gray-900 text-center w-full"
-            value={reps}
-            onChangeText={setReps}
-            placeholder={ghost ? String(ghost.reps) : "0"}
-            placeholderTextColor="#D1D5DB"
-            keyboardType="number-pad"
             selectTextOnFocus
           />
         </View>
@@ -169,7 +428,6 @@ export default function FocusedEntryScreen() {
     );
   }
 
-  // Total indicator boxes: logged sets + 1 active
   const totalBoxes = activeSetIndex + 1;
 
   return (
@@ -187,18 +445,33 @@ export default function FocusedEntryScreen() {
           <Text className="text-lg font-semibold text-gray-500 mb-1">
             {exerciseName}
           </Text>
+          {nextSupersetExercise && (
+            <Text className="text-sm text-purple-600 mb-1">
+              Next: {nextSupersetExercise.name}
+            </Text>
+          )}
 
-          {/* Set counter with animation */}
-          <View className="flex-row items-center mb-4">
-            <Animated.Text
-              className="text-4xl font-bold text-gray-900"
-              style={counterStyle}
-            >
-              Set {activePageIndex + 1}
-            </Animated.Text>
-            <Animated.View style={[{ marginLeft: 8 }, checkStyle]}>
-              <Check size={28} color="#22C55E" strokeWidth={3} />
-            </Animated.View>
+          {/* Set counter with animation + rest timer */}
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center">
+              <Animated.Text
+                className="text-4xl font-bold text-gray-900"
+                style={counterStyle}
+              >
+                Set {activePageIndex + 1}
+              </Animated.Text>
+              <Animated.View style={[{ marginLeft: 8 }, checkStyle]}>
+                <Check size={28} color="#22C55E" strokeWidth={3} />
+              </Animated.View>
+            </View>
+            {restTimerActive && (
+              <RestTimer
+                durationSeconds={90}
+                onDismiss={() => setRestTimerActive(false)}
+                onComplete={() => setRestTimerActive(false)}
+                startedAt={restTimerStartedAt}
+              />
+            )}
           </View>
 
           {/* Set indicator boxes */}
@@ -269,7 +542,7 @@ export default function FocusedEntryScreen() {
               onPress={handleFinish}
             >
               <Text className="text-gray-700 text-lg font-semibold">
-                Finish Exercise
+                Back to Workout
               </Text>
             </TouchableOpacity>
           </View>
