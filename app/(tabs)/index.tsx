@@ -235,8 +235,8 @@ export default function HistoryScreen() {
                     {item.name}
                   </Text>
                   <Text className="text-sm font-sans text-gray-500 mt-1">
-                    {formatDate(item.date)} &middot; {formatDuration(item.duration)}{" "}
-                    &middot; {Math.round(item.total_volume).toLocaleString()} lbs
+                    {formatDate(item.date)} &middot; {formatDuration(item.duration)}
+                    {item.total_volume > 0 ? ` \u00B7 ${Math.round(item.total_volume).toLocaleString()} lbs` : ""}
                   </Text>
                 </Card>
               </TouchableOpacity>

@@ -71,5 +71,53 @@ export function initDatabase(): void {
     );
   `);
 
-  console.log("Database initialized with tables: workouts, exercises, sets, templates, template_exercises");
+  // Custom exercises table
+  database.execSync(`
+    CREATE TABLE IF NOT EXISTS custom_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      muscle_group TEXT NOT NULL,
+      metric_type TEXT NOT NULL DEFAULT 'weight_reps',
+      is_bodyweight INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+  `);
+
+  // Add metric columns to exercises table
+  try {
+    database.execSync(`ALTER TABLE exercises ADD COLUMN metric_type TEXT DEFAULT 'weight_reps'`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    database.execSync(`ALTER TABLE exercises ADD COLUMN superset_group INTEGER DEFAULT NULL`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    database.execSync(`ALTER TABLE exercises ADD COLUMN unit TEXT DEFAULT 'lbs'`);
+  } catch {
+    // Column already exists
+  }
+
+  // Add value column to sets table (for distance/time metrics)
+  try {
+    database.execSync(`ALTER TABLE sets ADD COLUMN value REAL DEFAULT 0`);
+  } catch {
+    // Column already exists
+  }
+
+  // Add metric columns to template_exercises table
+  try {
+    database.execSync(`ALTER TABLE template_exercises ADD COLUMN metric_type TEXT DEFAULT 'weight_reps'`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    database.execSync(`ALTER TABLE template_exercises ADD COLUMN superset_group INTEGER DEFAULT NULL`);
+  } catch {
+    // Column already exists
+  }
+
+  console.log("Database initialized with tables: workouts, exercises, sets, templates, template_exercises, custom_exercises");
 }

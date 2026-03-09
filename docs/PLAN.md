@@ -42,5 +42,20 @@
 - **Rename routine** — long-press routine card → Alert with Rename option → `NameInputModal`
 - **Routine preview** — tap routine shows `RoutinePreviewModal` with exercise list + "Jump into Routine" button
 
-## Phase 4: TBD
+## Phase 4: Feature Pack — Rest Timer, Custom Exercises, Supersets, Bodyweight, Metrics
+**Status:** Done (2026-03-02)
+**Revised by:** Claude (2026-03-02) — Added 6 features in one batch
+
+- **Schema migrations** — `custom_exercises` table, `metric_type`/`superset_group`/`unit` columns on exercises, `value` column on sets, `metric_type`/`superset_group` on template_exercises
+- **Metric types** — `weight_reps`, `bodyweight_reps`, `distance`, `time` with per-exercise unit tracking
+- **Extended data model** — `ExerciseDefinition` now includes `metricType`, `isBodyweight`, `defaultUnit`; built-in exercises updated (Push-Up/Pull-Up → bodyweight_reps, Plank → time)
+- **Custom exercises** — `CreateExerciseModal` with name/muscle group/metric type pickers; saved to `custom_exercises` table; merged into ExerciseSearch results via `getAllExercises()` helper
+- **Metric-aware focused entry** — inputs adapt per metric type: Weight+Reps, Bodyweight+Reps (optional "+ Add Weight" toggle), Distance (m), Time (seconds)
+- **Rest timer** — `RestTimer` overlay auto-starts after logging a set (90s countdown), +/- 15s adjustment, haptic buzz on completion, skip button
+- **Supersets** — "Link Superset" button enters selection mode with checkboxes; select 2+ exercises → "Create Superset"; grouped rendering with purple left bar and "SUPERSET" label via `SupersetCard`; long-press to ungroup
+- **Rename "Finish Exercise" → "Back to Workout"** — button text only, behavior unchanged
+- **Volume conditional display** — volume only shown when > 0 (hides for non-weight workouts) in history cards, workout detail, and summary modal
+- **Volume calculation** — only sums weight-based exercises (`weight_reps`/`bodyweight_reps`)
+
+## Phase 5: TBD
 <!-- TODO: Fill in from Gemini conversation -->

@@ -66,14 +66,16 @@ export default function WorkoutDetailScreen() {
               {durationStr}
             </Text>
           </View>
-          <View className="flex-1 bg-white rounded-xl p-4 items-center">
-            <Text className="text-sm font-bold uppercase text-gray-500 mb-1">
-              Volume
-            </Text>
-            <Text className="text-xl font-bold text-gray-900">
-              {Math.round(workout.total_volume).toLocaleString()} lbs
-            </Text>
-          </View>
+          {workout.total_volume > 0 && (
+            <View className="flex-1 bg-white rounded-xl p-4 items-center">
+              <Text className="text-sm font-bold uppercase text-gray-500 mb-1">
+                Volume
+              </Text>
+              <Text className="text-xl font-bold text-gray-900">
+                {Math.round(workout.total_volume).toLocaleString()} lbs
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Notes */}
@@ -89,6 +91,8 @@ export default function WorkoutDetailScreen() {
         {/* Exercises */}
         {exercises.map((exercise: ExerciseRow) => {
           const sets: SetRow[] = getSetsForExercise(exercise.id);
+          const mt = exercise.metric_type || "weight_reps";
+          const u = exercise.unit || "lbs";
           return (
             <View key={exercise.id} className="bg-white rounded-xl p-4 mb-3">
               <Text className="text-base font-bold text-gray-900">
@@ -97,11 +101,25 @@ export default function WorkoutDetailScreen() {
               <Text className="text-sm text-gray-500 mb-2">
                 {exercise.muscle_group}
               </Text>
-              {sets.map((set, index) => (
-                <Text key={set.id} className="text-sm text-gray-700 ml-2">
-                  Set {index + 1}: {set.weight} lbs x {set.reps} reps
-                </Text>
-              ))}
+              {sets.map((set, index) => {
+                let display = "";
+                if (mt === "weight_reps") {
+                  display = `${set.weight} ${u} × ${set.reps} reps`;
+                } else if (mt === "bodyweight_reps") {
+                  display = set.weight > 0
+                    ? `BW + ${set.weight} ${u} × ${set.reps} reps`
+                    : `BW × ${set.reps} reps`;
+                } else if (mt === "distance") {
+                  display = `${set.value} m`;
+                } else if (mt === "time") {
+                  display = `${set.value} s`;
+                }
+                return (
+                  <Text key={set.id} className="text-sm text-gray-700 ml-2">
+                    Set {index + 1}: {display}
+                  </Text>
+                );
+              })}
               {sets.length === 0 && (
                 <Text className="text-sm text-gray-400 ml-2">
                   No sets logged

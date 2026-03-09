@@ -96,14 +96,16 @@ export function WorkoutSummaryModal({
                   {setCount}
                 </Text>
               </View>
-              <View className="flex-1 bg-white rounded-xl p-4 items-center">
-                <Text className="text-sm font-bold uppercase text-gray-500 mb-1">
-                  Volume
-                </Text>
-                <Text className="text-xl font-bold text-gray-900">
-                  {Math.round(totalVolume).toLocaleString()}
-                </Text>
-              </View>
+              {totalVolume > 0 && (
+                <View className="flex-1 bg-white rounded-xl p-4 items-center">
+                  <Text className="text-sm font-bold uppercase text-gray-500 mb-1">
+                    Volume
+                  </Text>
+                  <Text className="text-xl font-bold text-gray-900">
+                    {Math.round(totalVolume).toLocaleString()} lbs
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Exercises performed */}
